@@ -129,49 +129,16 @@ public class CreateMyJTree {
   			
   			//判断语句的多种情况
   			
-  			//for 语句
+  			//forStatement
   			if (iastNode instanceof IASTForStatement) {
-  				MyJtreeNode jtreeNode = new MyJtreeNode();
-  				jtreeNode.setNodeType("ForStatement");
-  				String string = "";
-  				if(((IASTForStatement) iastNode).getInitializerStatement()!=null) {
-  					string += ((IASTForStatement) iastNode).getInitializerStatement().getRawSignature();//i=0
-  				}
-  				if(((IASTForStatement) iastNode).getConditionExpression()!=null) {
-  					string += ((IASTForStatement) iastNode).getConditionExpression().getRawSignature();//i<n
-  				}
-  				if(((IASTForStatement) iastNode).getIterationExpression()!=null) {
-  					string += ((IASTForStatement) iastNode).getIterationExpression().getRawSignature();//i++
-  				}
-  				jtreeNode.setNodeContent(string);
-  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
-  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
-  				
-  				DefaultMutableTreeNode forNode =new DefaultMutableTreeNode(jtreeNode);
-  				root.add(forNode);
-  				//遍历for循环的结构
-  				visitScope(forNode,((IASTForStatement) iastNode).getBody().getChildren());
+  				visitForStatement(root, iastNode);
   			}
-  			//if 语句
+  			//ifStatement
   			else if(iastNode instanceof IASTIfStatement){
-  				MyJtreeNode jtreeNode = new MyJtreeNode();
-  				jtreeNode.setNodeType("IfStatement");
-  				jtreeNode.setNodeContent(((IASTIfStatement) iastNode).getConditionExpression().getRawSignature());//if（）中的控制语句
-  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
-  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
-  				DefaultMutableTreeNode ifNode = new DefaultMutableTreeNode(jtreeNode);
-  				root.add(ifNode);
-  				System.out.println("if:"+iastNode.getRawSignature());
-  				if(((IASTIfStatement)iastNode).getThenClause()!=null) {
-  					for(IASTNode node:((IASTIfStatement)iastNode).getThenClause().getChildren()) {
-  						System.out.println("then:"+node.getRawSignature());
-  					}
-					//将if(){}块加入if节点的子节点中
-					visitScope(ifNode,((IASTIfStatement)iastNode).getThenClause().getChildren());
-				}
-				
+  				visitIfStatement(root, iastNode);
+
   			}
-  			//while 语句
+  			//whileStatement
   			else if (iastNode instanceof IASTWhileStatement) {
   				MyJtreeNode jtreeNode = new MyJtreeNode();
   				jtreeNode.setNodeType("WhileStatement");
@@ -185,7 +152,7 @@ public class CreateMyJTree {
 				visitScope(whileNode,((IASTWhileStatement)iastNode).getBody().getChildren());
 		
 			}
-  			//switch语句
+  			//switchStatement
   			else if (iastNode instanceof IASTSwitchStatement) {
   				MyJtreeNode jtreeNode = new MyJtreeNode();
   				jtreeNode.setNodeType("SwitchStatement");
@@ -261,39 +228,104 @@ public class CreateMyJTree {
   				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
   				root.add(node);
 			}
+//  			else {
+//  				MyJtreeNode jtreeNode = new MyJtreeNode();
+//  				jtreeNode.setNodeType("Expression");
+//  				jtreeNode.setNodeContent(iastNode.getRawSignature());
+//  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
+//  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
+//  				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
+//  				root.add(node);		
+//			}
   		}
   	}
-  	/*
-  	private void visitIfStatement(DefaultMutableTreeNode root,IASTIfStatement ifStatement) throws Exception {
-		MyJtreeNode jtreeNode = new MyJtreeNode();
-		jtreeNode.setNodeType("IfStatement");
-		jtreeNode.setNodeContent(((IASTIfStatement)ifStatement).getConditionExpression().getRawSignature());
+  	//body in forStatement
+  	private void visitForStatement(DefaultMutableTreeNode root,IASTNode forStatement) throws Exception {
+  		//System.out.println("body0:"+forStatement.getRawSignature());
+  		MyJtreeNode jtreeNode = new MyJtreeNode();
+		jtreeNode.setNodeType("ForStatement");
+		String string = "";
+		if(((IASTForStatement) forStatement).getInitializerStatement()!=null) {
+			string += ((IASTForStatement) forStatement).getInitializerStatement().getRawSignature();//i=0
+		}
+		if(((IASTForStatement) forStatement).getConditionExpression()!=null) {
+			string += ((IASTForStatement) forStatement).getConditionExpression().getRawSignature();//i<n
+		}
+		if(((IASTForStatement) forStatement).getIterationExpression()!=null) {
+			string += ((IASTForStatement) forStatement).getIterationExpression().getRawSignature();//i++
+		}
+		jtreeNode.setNodeContent(string);
+		jtreeNode.setStartLine(forStatement.getFileLocation().getStartingLineNumber());
+		jtreeNode.setEndLine(forStatement.getFileLocation().getEndingLineNumber());
+		
+		DefaultMutableTreeNode forNode =new DefaultMutableTreeNode(jtreeNode);
+		root.add(forNode);
+		//遍历for循环的结构
+		//to resolve the situation of "for{ for{}  }"
+		if(((IASTForStatement) forStatement).getBody() instanceof IASTForStatement) {
+			//System.out.println("body0:"+((IASTForStatement) forStatement).getBody().getRawSignature());
+			visitForStatement(forNode, ((IASTForStatement) forStatement).getBody());
+			
+		}
+		//to resolve the situation of "for{ if{}  }"
+		else if(((IASTForStatement) forStatement).getBody() instanceof IASTIfStatement){
+			//System.out.println("body1:"+((IASTForStatement) forStatement).getBody().getRawSignature());
+			visitIfStatement(forNode, ((IASTForStatement) forStatement).getBody());	
+		}
+		else {
+			//System.out.println("body2:"+((IASTForStatement) forStatement).getBody().getRawSignature());
+			visitScope(forNode,((IASTForStatement) forStatement).getBody().getChildren());
+		}
+		
+	}
+  	//if语句的else部分
+  	private void visitIfStatement(DefaultMutableTreeNode root,IASTNode ifStatement) throws Exception {
+  		MyJtreeNode jtreeNode = new MyJtreeNode();
+  		jtreeNode.setNodeType("IfStatement");
+		jtreeNode.setNodeContent(((IASTIfStatement) ifStatement).getConditionExpression().getRawSignature());//if（）中的控制语句
 		jtreeNode.setStartLine(ifStatement.getFileLocation().getStartingLineNumber());
 		jtreeNode.setEndLine(ifStatement.getFileLocation().getEndingLineNumber());
 		DefaultMutableTreeNode ifNode = new DefaultMutableTreeNode(jtreeNode);
 		root.add(ifNode);
-		System.out.println("if1:"+ifStatement.getRawSignature());
+		
 		if(((IASTIfStatement)ifStatement).getThenClause()!=null) {
-			
-			//将if(){}块加入if节点的子节点中
-			visitScope(ifNode,((IASTIfStatement)ifStatement).getThenClause().getChildren());
-			for(IASTNode node:((IASTIfStatement)ifStatement).getThenClause().getChildren()) {
-				System.out.println("then1:"+node.getRawSignature());
-			}
-		}
-		if(((IASTIfStatement)ifStatement).getElseClause()!=null) {//有else语句时
-			//如果是if
-			for(IASTNode node:((IASTIfStatement)ifStatement).getElseClause().getChildren()) {
-				System.out.println("else1:"+node.getRawSignature());
-			}
-			if(((IASTIfStatement) ifStatement).getElseClause() instanceof IASTIfStatement) {
-				visitIfStatement(ifNode, (IASTIfStatement)((IASTIfStatement) ifStatement).getElseClause());
+//			for(IASTNode node:((IASTIfStatement)ifStatement).getThenClause().getChildren()) {
+//				System.out.println("then:"+node.getRawSignature());
+//			}
+//		
+			//if thenStatement is a ifStatement
+			if(((IASTIfStatement)ifStatement).getThenClause() instanceof IASTIfStatement) {
+				//System.out.println("then1:"+((IASTIfStatement)ifStatement).getThenClause().getRawSignature());
+				visitIfStatement(ifNode, ((IASTIfStatement)ifStatement).getThenClause());
 			}
 			else {
-				visitScope(ifNode,((IASTIfStatement)ifStatement).getElseClause().getChildren());
+				//System.out.println("then2:"+((IASTIfStatement)ifStatement).getThenClause().getRawSignature());
+				visitScope(ifNode,((IASTIfStatement)ifStatement).getThenClause().getChildren());
 			}
 		}
-		visitScope(ifNode,((IASTIfStatement)ifStatement).getThenClause().getChildren());
+		if(((IASTIfStatement)ifStatement).getElseClause()!=null) {
+//			for(IASTNode node:((IASTIfStatement)ifStatement).getElseClause().getChildren()) {
+//				System.out.println("else:"+node.getRawSignature());
+//			}
+			//System.out.println("else1:"+((IASTIfStatement)ifStatement).getElseClause().getRawSignature());
+			//visitScope(ifNode,((IASTIfStatement)iastNode).getElseClause().getChildren());
+			
+			//if thenStatement is a ifStatement
+			if(((IASTIfStatement)ifStatement).getElseClause() instanceof IASTIfStatement) {
+				visitIfStatement(ifNode, ((IASTIfStatement)ifStatement).getElseClause());
+			}
+			//to resolve the situation of "if{ else{}  }"
+			else {
+				MyJtreeNode node = new MyJtreeNode();
+		  		node.setNodeType("ElseStatement");
+				node.setNodeContent("");
+				node.setStartLine(((IASTIfStatement)ifStatement).getElseClause().getFileLocation().getStartingLineNumber());
+				node.setEndLine(((IASTIfStatement)ifStatement).getElseClause().getFileLocation().getEndingLineNumber());
+				DefaultMutableTreeNode elseNode = new DefaultMutableTreeNode(node);
+				ifNode.add(elseNode);
+				visitScope(elseNode,((IASTIfStatement)ifStatement).getElseClause().getChildren());
+			}	
+		}
   	}
-  	*/
+  	
 }

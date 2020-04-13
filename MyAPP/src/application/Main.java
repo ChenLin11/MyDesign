@@ -49,14 +49,15 @@ public class Main extends Application
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			primaryStage.show();
-			
+			//17201125
 			//CreateMyJTree myJTree1 = new CreateMyJTree(new File("D:\\20191230025851\\1208801141872599055\\17201125_1175583248878112768_1208801141872599055.c"));
-			//JTree jTree = myJTree1.getJTree();
-			CreateMyJTree myJTree3 = new CreateMyJTree(new File("D:\\20191230025851\\1208801141872599055\\19201503_1173833074035929088_1208801141872599055.c"));
-			//CreateMyJTree myJTree2 = new CreateMyJTree(new File("D:\\C_code\\StringSort.c"));
+			
+			//19201503
+			//CreateMyJTree myJTree3 = new CreateMyJTree(new File("D:\\20191230025851\\1208801141872599055\\19201503_1173833074035929088_1208801141872599055.c"));
+			CreateMyJTree myJTree2 = new CreateMyJTree(new File("D:\\C_code\\StringSort.c"));
 			JFrame f = new JFrame("JTreeDemo");
 	        //f.add(myJTree1.getJTree());
-	        f.add(myJTree3.getJTree());
+	        f.add(myJTree2.getJTree());
 	        f.setSize(600, 1000);
 	        f.setVisible(true);
 	        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
