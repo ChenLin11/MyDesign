@@ -9,13 +9,13 @@ public class MyDMTreeNodeCostModel implements CostModel<MyStringNodeData> {
 	@Override
 	public float del(AptedNode<MyStringNodeData> n) {
 		// TODO Auto-generated method stub
-		return 1.1f;
+		return 1.0f;
 	}
 
 	@Override
 	public float ins(AptedNode<MyStringNodeData> n) {
 		// TODO Auto-generated method stub
-		return 1.1f;
+		return 1.0f;
 	}
 
 	@Override
@@ -25,11 +25,12 @@ public class MyDMTreeNodeCostModel implements CostModel<MyStringNodeData> {
 		String type1 = n1.getNodeData().getNodeType();
 		String type2 = n2.getNodeData().getNodeType();
 		if (type1.equals(type2)) {
-			TextSimiliar textSimiliar = new TextSimiliar(n1.getNodeData().getNodeContent(), n2.getNodeData().getNodeContent());			
-			return 1-textSimiliar.levenshtein();
-			//return 0.1f;
+			TextSimiliar textSimiliar = new TextSimiliar();			
+			//当节点类型一样，还要参考节点本文
+			//return 1-textSimiliar.levenshtein(n1.getNodeData().getNodeContent(), n2.getNodeData().getNodeContent());
+			return 0.0f;
 		}
-		return 1.1f;
+		return 1.0f;
 	}
 
 	

@@ -1,14 +1,11 @@
 package apted.parser;
 
 import java.util.Enumeration;
-import java.util.Iterator;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
 
 import apted.node.AptedNode;
 import apted.node.MyStringNodeData;
-import apted.node.StringNodeData;
 import myTree.MyJtreeNode;
 
 public class DMTreeNodeParser implements MyInputParser<MyStringNodeData> {

@@ -20,10 +20,13 @@ public class CFile implements FileType {
 	private String text = "";
 	private String[] textOrignal;//源文件内容
 	private File file;
-	public void file(File file) throws Exception {
+	
+	public CFile(File file) throws Exception {
+		super();
 		this.file = file;
 		formatCode();
 	}
+	
 	/**
      * 创建解析单元
      * @param source

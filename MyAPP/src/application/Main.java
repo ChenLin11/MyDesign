@@ -7,24 +7,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Vector;
 
 import javax.swing.JPanel;
 import javax.swing.JTree;
 import javax.swing.filechooser.FileSystemView;
 
-import apted.node.StringNodeData;
-import apted.costmodel.MyDMTreeNodeCostModel;
-import apted.costmodel.StringUnitCostModel;
-import apted.distance.APTED;
-import apted.node.AptedNode;
-import apted.node.MyStringNodeData;
-import apted.parser.DMTreeNodeParser;
 import file.ItemData;
 import file.MyTreeCell;
 import file.ResultData;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleFloatProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -43,6 +37,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -93,20 +88,61 @@ public class Main extends Application
 				if (arrayList.size()<2) {
 					return ;
 				}
-				ArrayList<AptedNode<MyStringNodeData>> aptedArrayList = new ArrayList<>();
-				DMTreeNodeParser parser = new DMTreeNodeParser();
-				
-				for (int i = 0; i < arrayList.size(); i++) {
-					try {
-						File file = new File(arrayList.get(i).getPath());
-						aptedArrayList.add(parser.fromNode(new CreateMyJTree(file).getRootDMTreeNode()));
-					} catch (Exception e) {
-						e.printStackTrace();
+				secondStage = new Stage();
+				StackPane secondPane = new StackPane();
+		        Scene secondScene = new Scene(secondPane, 1000, 500);
+				//tableView 展示n个文件之间的相似度结果
+		        TableView<ResultData> tableView = new TableView<>();
+		        secondPane.getChildren().add(tableView);
+		        try {
+		        	ArrayList<ResultData> resultlList = new ArrayList<>();
+					for (int i = 0; i < arrayList.size(); i++) {
+						ResultData resultData = new ResultData(arrayList, i);
+						resultlList.add(resultData);
 					}
-					
+					tableView.getItems().addAll(resultlList);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				calculateAPTEDList(aptedArrayList);
-				
+		        //第一列
+		        TableColumn<ResultData, String> tableColumn = new TableColumn<>("Student");
+		        tableColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,String>, ObservableValue<String>>() {
+					
+					@Override
+					public ObservableValue<String> call(CellDataFeatures<ResultData, String> param) {
+						// TODO Auto-generated method stub
+						SimpleStringProperty ssp = new SimpleStringProperty(param.getValue().getMyFileName());
+						return ssp;
+					}
+				});
+		        tableView.getColumns().add(tableColumn);
+		        for (int i = 0; i < arrayList.size(); i++) {
+		        	//第i列,用于展示结果
+		        	String nameString = arrayList.get(i).getName();
+		        	TableColumn<ResultData, Number> resultColumn;
+		        	//第i列的列表名设置为第i个学生的文件名(前八个字符)
+		        	if (nameString.length()>8) {
+						resultColumn = new TableColumn<>(nameString.substring(0, 8));
+					}
+		        	else {
+		        		resultColumn = new TableColumn<>(nameString);
+					}
+		        	
+			        resultColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,Number>, ObservableValue<Number>>() {
+			        	//返回的float用SimpleFloatProperty，然而继承的是ObservableValue<Number>
+						@Override
+						public ObservableValue<Number> call(CellDataFeatures<ResultData, Number> param) {
+							//该列的属性值是：当前用户类(ResultData)表示的文件与该列表示的文件(param.getTableColumn().getText())的计算结果							
+							SimpleFloatProperty sfp = new SimpleFloatProperty(param.getValue().getResult(param.getTableColumn().getText()));
+							return sfp;
+						}
+					});
+			        tableView.getColumns().add(resultColumn);
+				}
+		       
+		        secondStage.setScene(secondScene);
+		        secondStage.show();
 			}
 		});
 		hBox1.setPadding(new Insets(10));
@@ -123,32 +159,7 @@ public class Main extends Application
 		vBox.setPrefHeight(600);
 		pane.setCenter(vBox);
 		
-		// 创建新的stage
-//        secondStage = new Stage();
-//        StackPane secondPane = new StackPane();
-//        Scene secondScene = new Scene(secondPane, 300, 200);
-//        TreeView<String> tv = new TreeView<>();
-//        TreeItem<String> item = new TreeItem<>("跟节点");
-//        
-//        tv.setRoot(item);
-//        item.setExpanded(true);
-//        TreeItem<String> i1 = new TreeItem<>("电影");
-//        TreeItem<String> i2 = new TreeItem<>("音乐");
-//        TreeItem<String> i3 = new TreeItem<>("游戏");
-//        item.getChildren().addAll(i1,i2,i3);
-//        TreeItem<String> i4 = new TreeItem<>("荡寇风云");
-//        TreeItem<String> i5 = new TreeItem<>("变形金刚5");
-//        i1.setExpanded(true);
-//        i1.getChildren().addAll(i4,i5);
-//	    tv.getStyleClass().add("resultTreeView");
-//        tv.setStyle(".LeafNodesStyle {\r\n" + 
-//	    		"    display: inline-block;\r\n" + 
-//	    		"    padding: 5px 10px;\r\n" + 
-//	    		"    float:left;\r\n" + 
-//	    		"}");
-//        secondPane.getChildren().add(tv);
-//        secondStage.setScene(secondScene);
-//        secondStage.show();
+	
         
 		Scene scene = new Scene(pane, 1200, 600);
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
@@ -157,45 +168,7 @@ public class Main extends Application
 
 		
 	}
-	private void calculateAPTEDList(ArrayList<AptedNode<MyStringNodeData>> aptedList) {
-		//APTED<StringUnitCostModel, StringNodeData> apted = new APTED<>(new StringUnitCostModel());
-		APTED<MyDMTreeNodeCostModel, MyStringNodeData> apted = new APTED<>(new MyDMTreeNodeCostModel());
-		float[][] resultArray = new float[aptedList.size()][aptedList.size()];
-		secondStage = new Stage();
-        StackPane secondPane = new StackPane();
-        Scene secondScene = new Scene(secondPane, 500, 500);
-        //tableView 展示n个文件之间的相似度结果
-        TableView<ResultData> tableView = new TableView<>();
-        secondPane.getChildren().add(tableView);
-        //第一列
-        TableColumn<ResultData, String> tableColumn = new TableColumn<>("Student");
-        tableView.getColumns().add(tableColumn);
-        //所选取的文件列表，将文件名添加到第一列
-        for (ItemData data : arrayList) {
-        	String nameString = data.getName();
-			if (data.getName().length()>8) {
-				nameString = data.getName().substring(0, 8);
-			}
-			//只存储文件名，不存结果
-			ResultData resultData = new ResultData(nameString);
-			tableColumn.getColumns().add(new TableColumn<ResultData, String>("sdg"));
-		}
-        //tableColumn.getColumns()apted;
-		for (int i = 0; i < aptedList.size(); i++) {
-			
-			
-			for (int j = i+1; j < aptedList.size(); j++) {
-				int maxNodes = aptedList.get(i).getNodeCount()>aptedList.get(j).getNodeCount()?aptedList.get(i).getNodeCount():aptedList.get(j).getNodeCount();
-				float result = 1 - apted.computeEditDistance(aptedList.get(i), aptedList.get(j))/maxNodes;
-				resultArray[i][j] = result;
-				System.out.println(arrayList.get(i).getName().subSequence(0, 8)+"-"+arrayList.get(j).getName().subSequence(0, 8)+":"+result+"--"+apted.computeEditDistance(aptedList.get(i), aptedList.get(j)));
-			}
-		}
-		
-        secondStage.setScene(secondScene);
-        secondStage.show();
-	}
-	
+
 	public static void main(String[] args) throws Exception
 	{
 		

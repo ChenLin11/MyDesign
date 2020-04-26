@@ -92,14 +92,14 @@ public class AptedNode<D> {
    *
    * @return tree in bracket notation.
    */
-  public String toString() {
-    String res = (new StringBuilder("{")).append(((StringNodeData)getNodeData()).getLabel()).toString();
-    for(AptedNode<D> child : getChildren()) {
-      res = (new StringBuilder(String.valueOf(res))).append(child.toString()).toString();
-    }
-    res = (new StringBuilder(String.valueOf(res))).append("}").toString();
-    return res;
-  }
+//  public String toString() {
+//    String res = (new StringBuilder("{")).append(((StringNodeData)getNodeData()).getLabel()).toString();
+//    for(AptedNode<D> child : getChildren()) {
+//      res = (new StringBuilder(String.valueOf(res))).append(child.toString()).toString();
+//    }
+//    res = (new StringBuilder(String.valueOf(res))).append("}").toString();
+//    return res;
+//  }
 
   /**
    * Returns node data. Used especially for calculating rename cost.
