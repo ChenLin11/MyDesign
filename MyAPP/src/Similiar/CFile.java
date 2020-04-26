@@ -115,7 +115,7 @@ public class CFile implements FileType {
 		}
         
         //System.out.println(getText());
-		String[] symbol = {"\0","\n","\r","\t","{","}"};
+		String[] symbol = {"\0","\n","\r","\t","{","}","\r\n"};
 		for(String s : symbol) {
 			text = text.replace(s,"");
 		}

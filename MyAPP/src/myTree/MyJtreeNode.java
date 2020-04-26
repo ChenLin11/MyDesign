@@ -31,6 +31,6 @@ public class MyJtreeNode {
 		return nodeContent;
 	}
 	public String toString() {
-		return nodeType +": "+ nodeContent;
+		return nodeType +":"+ nodeContent;
 	}
 }

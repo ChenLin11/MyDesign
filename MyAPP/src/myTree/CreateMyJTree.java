@@ -5,18 +5,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
+import java.util.Enumeration;
 
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import org.eclipse.cdt.core.dom.ast.ExpansionOverlapsBoundaryException;
 import org.eclipse.cdt.core.dom.ast.IASTBreakStatement;
 import org.eclipse.cdt.core.dom.ast.IASTCaseStatement;
 import org.eclipse.cdt.core.dom.ast.IASTDeclaration;
 import org.eclipse.cdt.core.dom.ast.IASTDeclarationStatement;
 import org.eclipse.cdt.core.dom.ast.IASTDefaultStatement;
-import org.eclipse.cdt.core.dom.ast.IASTExpressionStatement;
 import org.eclipse.cdt.core.dom.ast.IASTForStatement;
 import org.eclipse.cdt.core.dom.ast.IASTFunctionCallExpression;
 import org.eclipse.cdt.core.dom.ast.IASTFunctionDefinition;
@@ -42,22 +40,16 @@ import org.eclipse.cdt.core.parser.ScannerInfo;
 public class CreateMyJTree {
 	private DefaultMutableTreeNode DMtreeNode;
 	private JTree jTree;
+	private File file;
 	private static IASTTranslationUnit u ;
 	//根据文件创建根节点 
 	public CreateMyJTree(File file) throws Exception {
 		// TODO Auto-generated constructor stub
+		this.file = file;
 		//编译单元
-		u = getTranslationUnit(file);
-		MyJtreeNode rootJtreeNode = new MyJtreeNode();
-		rootJtreeNode.setNodeType("SourceCode");
-		rootJtreeNode.setNodeContent(u.getFilePath().substring(u.getFilePath().lastIndexOf("\\")+1, u.getFilePath().length()));//文件名称
-		rootJtreeNode.setStartLine(u.getFileLocation().getStartingLineNumber());
-		rootJtreeNode.setEndLine(u.getFileLocation().getEndingLineNumber());
-		DMtreeNode = new DefaultMutableTreeNode(rootJtreeNode);
-		
 		
 	}
-	private static IASTTranslationUnit getTranslationUnit(File file) throws Exception{
+	private IASTTranslationUnit getTranslationUnit(File file) throws Exception{
         FileContent reader = FileContent.create(
                 file.getAbsolutePath(), 
                 getContentFile(file).toCharArray());
@@ -78,7 +70,7 @@ public class CreateMyJTree {
      * @return
      * @throws IOException
      */
-    private static String getContentFile(File file) throws IOException {
+    private String getContentFile(File file) throws IOException {
     	
         StringBuilder content = new StringBuilder();
         String line;
@@ -92,8 +84,15 @@ public class CreateMyJTree {
         return content.toString();
     }
     
-    public JTree getJTree() throws Exception {
-  		jTree = new JTree(DMtreeNode);
+    public DefaultMutableTreeNode getRootDMTreeNode() throws Exception {
+    	u = getTranslationUnit(file);
+		MyJtreeNode rootNode = new MyJtreeNode();
+		rootNode.setNodeType("SourceCode");
+		rootNode.setNodeContent(u.getFilePath().substring(u.getFilePath().lastIndexOf("\\")+1, u.getFilePath().length()));//文件名称
+		rootNode.setStartLine(u.getFileLocation().getStartingLineNumber());
+		rootNode.setEndLine(u.getFileLocation().getEndingLineNumber());
+		DMtreeNode = new DefaultMutableTreeNode(rootNode);
+//  		jTree = new JTree(DMtreeNode);
   		//构建根节点下的子树
   		//得到文件中定义的声明
         IASTDeclaration[] decs = u.getDeclarations();
@@ -112,11 +111,12 @@ public class CreateMyJTree {
 
     			DefaultMutableTreeNode node = new DefaultMutableTreeNode(rootJtreeNode);
     			DMtreeNode.add(node);
+    			
     			visitScope(node,((IASTFunctionDefinition) child).getBody().getChildren());
     		}
         }
-        
-		return jTree;
+    	
+		return DMtreeNode;
 	}
     //传入函数体/方法块，进一步解析
   	private void visitScope(DefaultMutableTreeNode root,IASTNode[] iastNodes) throws Exception {
@@ -126,7 +126,7 @@ public class CreateMyJTree {
   			return;
   		}
   		for(IASTNode iastNode : iastNodes) {
-  			
+  			//System.out.println("children:"+iastNode.getRawSignature());
   			//判断语句的多种情况
   			
   			//forStatement
@@ -201,15 +201,15 @@ public class CreateMyJTree {
   				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
   				root.add(node);
 			}
-  			else if (iastNode instanceof IASTExpressionStatement) {
-  				MyJtreeNode jtreeNode = new MyJtreeNode();
-  				jtreeNode.setNodeType("ExpressionStatement");
-  				jtreeNode.setNodeContent(iastNode.getRawSignature());
-  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
-  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
-  				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
-  				root.add(node);
-			}
+//  			else if (iastNode instanceof IASTExpressionStatement) {
+//  				MyJtreeNode jtreeNode = new MyJtreeNode();
+//  				jtreeNode.setNodeType("ExpressionStatement");
+//  				jtreeNode.setNodeContent(iastNode.getRawSignature());
+//  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
+//  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
+//  				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
+//  				root.add(node);
+//			}
   			else if (iastNode instanceof IASTReturnStatement) {
   				MyJtreeNode jtreeNode = new MyJtreeNode();
   				jtreeNode.setNodeType("ReturnStatement");
@@ -228,15 +228,15 @@ public class CreateMyJTree {
   				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
   				root.add(node);
 			}
-//  			else {
-//  				MyJtreeNode jtreeNode = new MyJtreeNode();
-//  				jtreeNode.setNodeType("Expression");
-//  				jtreeNode.setNodeContent(iastNode.getRawSignature());
-//  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
-//  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
-//  				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
-//  				root.add(node);		
-//			}
+  			else {
+  				MyJtreeNode jtreeNode = new MyJtreeNode();
+  				jtreeNode.setNodeType("Expression");
+  				jtreeNode.setNodeContent(iastNode.getRawSignature());
+  				jtreeNode.setStartLine(iastNode.getFileLocation().getStartingLineNumber());
+  				jtreeNode.setEndLine(iastNode.getFileLocation().getEndingLineNumber());
+  				DefaultMutableTreeNode node = new DefaultMutableTreeNode(jtreeNode);
+  				root.add(node);		
+			}
   		}
   	}
   	//body in forStatement
@@ -287,7 +287,7 @@ public class CreateMyJTree {
 		jtreeNode.setEndLine(ifStatement.getFileLocation().getEndingLineNumber());
 		DefaultMutableTreeNode ifNode = new DefaultMutableTreeNode(jtreeNode);
 		root.add(ifNode);
-		
+		//System.out.println("ifstatement:"+ifStatement.getRawSignature());
 		if(((IASTIfStatement)ifStatement).getThenClause()!=null) {
 //			for(IASTNode node:((IASTIfStatement)ifStatement).getThenClause().getChildren()) {
 //				System.out.println("then:"+node.getRawSignature());
