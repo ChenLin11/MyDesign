@@ -1,8 +1,8 @@
 package apted.costmodel;
 
-import Similiar.TextSimiliar;
 import apted.node.AptedNode;
 import apted.node.MyStringNodeData;
+import similar.TextSimilar;
 
 public class MyDMTreeNodeCostModel implements CostModel<MyStringNodeData> {
 
@@ -25,7 +25,7 @@ public class MyDMTreeNodeCostModel implements CostModel<MyStringNodeData> {
 		String type1 = n1.getNodeData().getNodeType();
 		String type2 = n2.getNodeData().getNodeType();
 		if (type1.equals(type2)) {
-			TextSimiliar textSimiliar = new TextSimiliar();			
+			//TextSimiliar textSimiliar = new TextSimiliar();			
 			//当节点类型一样，还要参考节点本文
 			//return 1-textSimiliar.levenshtein(n1.getNodeData().getNodeContent(), n2.getNodeData().getNodeContent());
 			return 0.0f;

@@ -1,8 +1,8 @@
-package Similiar;
+package similar;
 
-public class TextSimiliar {
+public class TextSimilar {
 
-	public TextSimiliar(){
+	public TextSimilar(){
 
 	}
 	public float levenshtein(String s1,String s2)
@@ -50,12 +50,12 @@ public class TextSimiliar {
                 dif[i][j] = min < num3 ? min : num3;
             }
         }
-        //System.out.println("字符串\""+str1+"\"与\""+str2+"\"的比较");  
+       
         //取数组右下角的值，同样不同位置代表不同字符串的比较  
-        //System.out.println("差异步骤："+dif[len1][len2]);  
+     
         //计算相似度  
         float similarity = 1 - (float)dif[len1][len2] / Math.max(len1, len2);
-        //System.out.println("相似度："+similarity);
+       
         return similarity;
 
     }

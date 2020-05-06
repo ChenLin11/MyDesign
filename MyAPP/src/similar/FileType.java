@@ -1,4 +1,4 @@
-package Similiar;
+package similar;
 
 import java.io.File;
 

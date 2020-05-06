@@ -1,6 +1,7 @@
 package application;
 
 import java.awt.FlowLayout;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,11 +31,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.control.TableColumn.CellDataFeatures;
@@ -45,8 +49,11 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import myTree.CreateMyJTree;
+
+import similar.ShowSimilar;
 
 public class Main extends Application
 {
@@ -55,7 +62,8 @@ public class Main extends Application
 	ArrayList< ItemData> arrayList = new ArrayList<ItemData>();
     SwingNode sNode = new SwingNode();
 	BorderPane pane;
-	Stage secondStage;
+	Stage secondStage = new Stage();
+	Stage thirdStage = new Stage();
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
@@ -77,22 +85,26 @@ public class Main extends Application
 				//通过它可以在ListView中选择单个或多个项目，并检查用户选择了哪些项目
 				//listView.getSelectionModel().selectAll();
 				listView.getSelectionModel().selectAll();
+				arrayList.removeAll(listView.getItems());
 				arrayList.addAll(listView.getItems());
+				
 				listView.requestFocus();
 			}
 		});
 		Button calculateAPTED = new Button("计算APTED");
 		calculateAPTED.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
-				//cannot calculate APTED when nodes's numb less than two
+				//cannot calculate APTED when nodes's number less than two
 				if (arrayList.size()<2) {
 					return ;
 				}
-				secondStage = new Stage();
+				
 				StackPane secondPane = new StackPane();
 		        Scene secondScene = new Scene(secondPane, 1000, 500);
 				//tableView 展示n个文件之间的相似度结果
 		        TableView<ResultData> tableView = new TableView<>();
+		        secondPane.setAlignment(Pos.CENTER);
+		        secondPane.setPadding(new Insets(5));
 		        secondPane.getChildren().add(tableView);
 		        try {
 		        	ArrayList<ResultData> resultlList = new ArrayList<>();
@@ -116,7 +128,35 @@ public class Main extends Application
 						return ssp;
 					}
 				});
+		        //自定义tableColumn的单元工厂，用于布局显示
+		        tableColumn.setCellFactory(new Callback<TableColumn<ResultData,String>, TableCell<ResultData,String>>() {
+
+					@Override
+					public TableCell<ResultData, String> call(TableColumn<ResultData, String> param) {
+						// TODO Auto-generated method stub
+						TableCell<ResultData, String> cell = new TableCell<ResultData, String>() {
+							@Override
+							protected void updateItem(String item,boolean empty) {
+								super.updateItem(item, empty);
+								if (!empty&&item != null) {
+									HBox hBox = new HBox();
+									//将label居中
+									hBox.setAlignment(Pos.CENTER);
+									Label label = new Label(item);
+									
+									hBox.setStyle("-fx-background-color:#DEDEDE");//阴影#DEDEDE								
+									hBox.getChildren().add(label);
+									this.setGraphic(hBox);
+								}
+							}
+
+						};
+						return cell;
+					}
+				});
 		        tableView.getColumns().add(tableColumn);
+		        //设置为可编辑状态
+	        	tableView.setEditable(true);
 		        for (int i = 0; i < arrayList.size(); i++) {
 		        	//第i列,用于展示结果
 		        	String nameString = arrayList.get(i).getName();
@@ -129,6 +169,7 @@ public class Main extends Application
 		        		resultColumn = new TableColumn<>(nameString);
 					}
 		        	
+		        	//加载tableColumn的数据
 			        resultColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,Number>, ObservableValue<Number>>() {
 			        	//返回的float用SimpleFloatProperty，然而继承的是ObservableValue<Number>
 						@Override
@@ -138,9 +179,87 @@ public class Main extends Application
 							return sfp;
 						}
 					});
+			        //自定义tableColumn的单元工厂，用于布局显示
+			        resultColumn.setCellFactory(new Callback<TableColumn<ResultData,Number>, TableCell<ResultData,Number>>() {
+
+						@Override
+						public TableCell<ResultData, Number> call(TableColumn<ResultData, Number> param) {
+							// TODO Auto-generated method stub
+							TableCell<ResultData, Number> cell = new TableCell<ResultData, Number>() {
+								@Override
+								protected void updateItem(Number item,boolean empty) {
+									super.updateItem(item, empty);
+									if (!empty&&item != null) {
+										HBox hBox = new HBox();
+										//将label居中
+										hBox.setAlignment(Pos.CENTER);
+										Label label = new Label(item.toString());
+										//根据相似度结果设置不同的颜色
+										//如果该列与该行所代表的文件是同一个
+										if (tableView.getItems().get(this.getIndex()).getMyFileName().contains(this.getTableColumn().getText())) {
+											hBox.setStyle("-fx-background-color:#008000");//Green纯绿#008000
+										}
+										//完全抄袭，红色标注
+										else if (item.floatValue() == 1) {
+											hBox.setStyle("-fx-background-color:#FF0000");//Red纯红#FF0000
+										}
+										//涉嫌抄袭，黄色标注
+										else if (item.floatValue() >= 0.8f) {
+											hBox.setStyle("-fx-background-color:#FFFF00");//Yellow纯黄#FFFF00
+										}
+										
+										hBox.getChildren().add(label);
+										this.setGraphic(hBox);
+										//当前用户类文件名前8位（学号）
+										String tip = tableView.getItems().get(this.getIndex()).getMyFileName();
+										if ( tip.length()>8) {
+											tip = tip.substring(0,8);
+										}
+										//提示框
+										this.setTooltip(new Tooltip(tip+"--"+this.getTableColumn().getText()));
+									}
+									
+								}
+
+								@Override
+								public void startEdit() {
+									// TODO Auto-generated method stub
+									super.startEdit();
+									HBox hBox = new HBox();
+									hBox.setPadding(new Insets(5));
+									hBox.setSpacing(10);
+									
+									ShowSimilar showSimilar = new ShowSimilar(tableView.getItems().get(this.getIndex()).getMyFileAllName(),
+											tableView.getItems().get(this.getIndex()).getIFileAllName(this.getTableColumn().getText()),
+											tableView.getItems().get(this.getIndex()).getMyFilePath(),
+											tableView.getItems().get(this.getIndex()).getIFilePath(this.getTableColumn().getText()));
+	
+									hBox.getChildren().addAll(showSimilar.getvBox1(),showSimilar.getvBox2());
+									
+							        Scene thirdScene = new Scene(hBox, 850, 400);
+							        thirdStage.setScene(thirdScene);
+							        thirdStage.show();
+								}
+								
+							};
+							return cell;
+						}
+					});
 			        tableView.getColumns().add(resultColumn);
 				}
-		       
+		        //空列、为了原最后一列的数据完整显示
+		        TableColumn<ResultData, String> nullColumn = new TableColumn<>("\t");
+		        nullColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,String>, ObservableValue<String>>() {
+					
+					@Override
+					public ObservableValue<String> call(CellDataFeatures<ResultData, String> param) {
+						// TODO Auto-generated method stub
+						SimpleStringProperty ssp = new SimpleStringProperty("\t");
+						return ssp;
+					}
+				});
+		        tableView.getColumns().add(nullColumn);
+		        
 		        secondStage.setScene(secondScene);
 		        secondStage.show();
 			}
@@ -160,13 +279,30 @@ public class Main extends Application
 		pane.setCenter(vBox);
 		
 	
-        
 		Scene scene = new Scene(pane, 1200, 600);
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		primaryStage.setScene(scene);
 		primaryStage.show();
+		//当前一个stage被关闭，后面的也随之关闭
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
-		
+			@Override
+			public void handle(WindowEvent event) {
+				// TODO Auto-generated method stub
+				secondStage.close();
+				thirdStage.close();
+			}
+			
+		});
+		secondStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+
+			@Override
+			public void handle(WindowEvent event) {
+				// TODO Auto-generated method stub
+				thirdStage.close();
+			}
+			
+		});
 	}
 
 	public static void main(String[] args) throws Exception
@@ -203,13 +339,13 @@ public class Main extends Application
 		treeView.setShowRoot(false);
 		treeView.setCellFactory((TreeView<ItemData> p) ->  new MyTreeCell());
 		
-		//treeview 的点击事件,显示其下的文件夹和文件
+		//treeView 的点击事件,显示其下的文件夹和文件
 		treeView.addEventFilter(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
 	    {
 	        public void handle(MouseEvent event)
 	        {
 	        	
-	        	 //获取点击的treeview节点，将其实例化为一个ItemData
+	        	 //获取点击的treeView节点，将其实例化为一个ItemData
 	        	 ItemData itemData= (ItemData) (treeView.getSelectionModel().getSelectedItem()).getValue();
 	        
 	        	 //获取点击的treeview节点
@@ -327,17 +463,7 @@ public class Main extends Application
 			@Override
 			public void changed(ObservableValue<? extends ItemData> observable, ItemData oldValue, ItemData newValue) {
 				arrayList.clear();
-				arrayList.addAll(listView.getSelectionModel().getSelectedItems());
-				try {
-					System.out.println(arrayList.size());
-					for (int i = 0; i < arrayList.size(); i++) {
-						System.out.println("select:"+arrayList.get(i).getName());
-					}
-					System.out.println("------------------------------------");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				arrayList.addAll(listView.getSelectionModel().getSelectedItems());				
 			}
 
 		});

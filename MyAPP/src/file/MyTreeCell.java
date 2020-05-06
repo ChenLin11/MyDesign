@@ -18,7 +18,7 @@ public class MyTreeCell extends TreeCell<ItemData>
 		 MenuItem addMenuItem = new MenuItem("Add Employee");
          addMenu.getItems().add(addMenuItem);
          addMenuItem.setOnAction((ActionEvent t) -> {
-        	ItemData data = new ItemData(true," ","asdg");
+        	ItemData data = new ItemData(true," ","File");
      		TreeItem<ItemData> root = new TreeItem<ItemData>(data);
      		getTreeItem().getChildren().add(root);
          });
