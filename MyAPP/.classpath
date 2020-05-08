@@ -6,5 +6,6 @@
 	<classpathentry kind="lib" path="D:/jdt/cdt/jar_files/org.eclipse.cdt.core-5.11.0.jar"/>
 	<classpathentry kind="lib" path="D:/jdt/jar_files/eclipse-astparser.jar"/>
 	<classpathentry kind="lib" path="D:/jdt/jar_files/org.eclipse.jdt.core.jar"/>
+	<classpathentry kind="lib" path="D:/jdt/jar_files/zip4j-2.5.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

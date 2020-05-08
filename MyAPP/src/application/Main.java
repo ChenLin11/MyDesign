@@ -1,13 +1,19 @@
 package application;
 
 import java.awt.FlowLayout;
-
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import javax.swing.JPanel;
 import javax.swing.JTree;
@@ -16,10 +22,9 @@ import javax.swing.filechooser.FileSystemView;
 import file.ItemData;
 import file.MyTreeCell;
 import file.ResultData;
+import file.ShowTableView;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleFloatProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -31,17 +36,12 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -53,8 +53,6 @@ import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import myTree.CreateMyJTree;
 
-import similar.ShowSimilar;
-
 public class Main extends Application
 {
 	TreeView<ItemData> treeView = new TreeView<ItemData>();
@@ -64,6 +62,7 @@ public class Main extends Application
 	BorderPane pane;
 	Stage secondStage = new Stage();
 	Stage thirdStage = new Stage();
+	Stage fourthStage = new Stage();
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
@@ -77,12 +76,12 @@ public class Main extends Application
 		VBox vBox = new VBox();
 		
 		HBox hBox1 = new HBox();
-		Button selectAllButton = new Button("È«Ñ¡");	
+		Button selectAllButton = new Button("å…¨é€‰");	
 		selectAllButton.setOnAction(new EventHandler<ActionEvent>() {
 
 			@Override
 			public void handle(ActionEvent event) {
-				//Í¨¹ıËü¿ÉÒÔÔÚListViewÖĞÑ¡Ôñµ¥¸ö»ò¶à¸öÏîÄ¿£¬²¢¼ì²éÓÃ»§Ñ¡ÔñÁËÄÄĞ©ÏîÄ¿
+				//é€šè¿‡å®ƒå¯ä»¥åœ¨ListViewä¸­é€‰æ‹©å•ä¸ªæˆ–å¤šä¸ªé¡¹ç›®ï¼Œå¹¶æ£€æŸ¥ç”¨æˆ·é€‰æ‹©äº†å“ªäº›é¡¹ç›®
 				//listView.getSelectionModel().selectAll();
 				listView.getSelectionModel().selectAll();
 				arrayList.removeAll(listView.getItems());
@@ -91,7 +90,7 @@ public class Main extends Application
 				listView.requestFocus();
 			}
 		});
-		Button calculateAPTED = new Button("¼ÆËãAPTED");
+		Button calculateAPTED = new Button("è®¡ç®—APTED");
 		calculateAPTED.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
 				//cannot calculate APTED when nodes's number less than two
@@ -101,165 +100,13 @@ public class Main extends Application
 				
 				StackPane secondPane = new StackPane();
 		        Scene secondScene = new Scene(secondPane, 1000, 500);
-				//tableView Õ¹Ê¾n¸öÎÄ¼şÖ®¼äµÄÏàËÆ¶È½á¹û
-		        TableView<ResultData> tableView = new TableView<>();
+				//tableView å±•ç¤ºnä¸ªæ–‡ä»¶ä¹‹é—´çš„ç›¸ä¼¼åº¦ç»“æœ
+		        ShowTableView showTableView = new ShowTableView(thirdStage, arrayList);
+		        TableView<ResultData> tableView = showTableView.getTableView();
 		        secondPane.setAlignment(Pos.CENTER);
 		        secondPane.setPadding(new Insets(5));
 		        secondPane.getChildren().add(tableView);
-		        try {
-		        	ArrayList<ResultData> resultlList = new ArrayList<>();
-					for (int i = 0; i < arrayList.size(); i++) {
-						ResultData resultData = new ResultData(arrayList, i);
-						resultlList.add(resultData);
-					}
-					tableView.getItems().addAll(resultlList);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		        //µÚÒ»ÁĞ
-		        TableColumn<ResultData, String> tableColumn = new TableColumn<>("Student");
-		        tableColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,String>, ObservableValue<String>>() {
-					
-					@Override
-					public ObservableValue<String> call(CellDataFeatures<ResultData, String> param) {
-						// TODO Auto-generated method stub
-						SimpleStringProperty ssp = new SimpleStringProperty(param.getValue().getMyFileName());
-						return ssp;
-					}
-				});
-		        //×Ô¶¨ÒåtableColumnµÄµ¥Ôª¹¤³§£¬ÓÃÓÚ²¼¾ÖÏÔÊ¾
-		        tableColumn.setCellFactory(new Callback<TableColumn<ResultData,String>, TableCell<ResultData,String>>() {
-
-					@Override
-					public TableCell<ResultData, String> call(TableColumn<ResultData, String> param) {
-						// TODO Auto-generated method stub
-						TableCell<ResultData, String> cell = new TableCell<ResultData, String>() {
-							@Override
-							protected void updateItem(String item,boolean empty) {
-								super.updateItem(item, empty);
-								if (!empty&&item != null) {
-									HBox hBox = new HBox();
-									//½«label¾ÓÖĞ
-									hBox.setAlignment(Pos.CENTER);
-									Label label = new Label(item);
-									
-									hBox.setStyle("-fx-background-color:#DEDEDE");//ÒõÓ°#DEDEDE								
-									hBox.getChildren().add(label);
-									this.setGraphic(hBox);
-								}
-							}
-
-						};
-						return cell;
-					}
-				});
-		        tableView.getColumns().add(tableColumn);
-		        //ÉèÖÃÎª¿É±à¼­×´Ì¬
-	        	tableView.setEditable(true);
-		        for (int i = 0; i < arrayList.size(); i++) {
-		        	//µÚiÁĞ,ÓÃÓÚÕ¹Ê¾½á¹û
-		        	String nameString = arrayList.get(i).getName();
-		        	TableColumn<ResultData, Number> resultColumn;
-		        	//µÚiÁĞµÄÁĞ±íÃûÉèÖÃÎªµÚi¸öÑ§ÉúµÄÎÄ¼şÃû(Ç°°Ë¸ö×Ö·û)
-		        	if (nameString.length()>8) {
-						resultColumn = new TableColumn<>(nameString.substring(0, 8));
-					}
-		        	else {
-		        		resultColumn = new TableColumn<>(nameString);
-					}
-		        	
-		        	//¼ÓÔØtableColumnµÄÊı¾İ
-			        resultColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,Number>, ObservableValue<Number>>() {
-			        	//·µ»ØµÄfloatÓÃSimpleFloatProperty£¬È»¶ø¼Ì³ĞµÄÊÇObservableValue<Number>
-						@Override
-						public ObservableValue<Number> call(CellDataFeatures<ResultData, Number> param) {
-							//¸ÃÁĞµÄÊôĞÔÖµÊÇ£ºµ±Ç°ÓÃ»§Àà(ResultData)±íÊ¾µÄÎÄ¼şÓë¸ÃÁĞ±íÊ¾µÄÎÄ¼ş(param.getTableColumn().getText())µÄ¼ÆËã½á¹û							
-							SimpleFloatProperty sfp = new SimpleFloatProperty(param.getValue().getResult(param.getTableColumn().getText()));
-							return sfp;
-						}
-					});
-			        //×Ô¶¨ÒåtableColumnµÄµ¥Ôª¹¤³§£¬ÓÃÓÚ²¼¾ÖÏÔÊ¾
-			        resultColumn.setCellFactory(new Callback<TableColumn<ResultData,Number>, TableCell<ResultData,Number>>() {
-
-						@Override
-						public TableCell<ResultData, Number> call(TableColumn<ResultData, Number> param) {
-							// TODO Auto-generated method stub
-							TableCell<ResultData, Number> cell = new TableCell<ResultData, Number>() {
-								@Override
-								protected void updateItem(Number item,boolean empty) {
-									super.updateItem(item, empty);
-									if (!empty&&item != null) {
-										HBox hBox = new HBox();
-										//½«label¾ÓÖĞ
-										hBox.setAlignment(Pos.CENTER);
-										Label label = new Label(item.toString());
-										//¸ù¾İÏàËÆ¶È½á¹ûÉèÖÃ²»Í¬µÄÑÕÉ«
-										//Èç¹û¸ÃÁĞÓë¸ÃĞĞËù´ú±íµÄÎÄ¼şÊÇÍ¬Ò»¸ö
-										if (tableView.getItems().get(this.getIndex()).getMyFileName().contains(this.getTableColumn().getText())) {
-											hBox.setStyle("-fx-background-color:#008000");//Green´¿ÂÌ#008000
-										}
-										//ÍêÈ«³­Ï®£¬ºìÉ«±ê×¢
-										else if (item.floatValue() == 1) {
-											hBox.setStyle("-fx-background-color:#FF0000");//Red´¿ºì#FF0000
-										}
-										//ÉæÏÓ³­Ï®£¬»ÆÉ«±ê×¢
-										else if (item.floatValue() >= 0.8f) {
-											hBox.setStyle("-fx-background-color:#FFFF00");//Yellow´¿»Æ#FFFF00
-										}
-										
-										hBox.getChildren().add(label);
-										this.setGraphic(hBox);
-										//µ±Ç°ÓÃ»§ÀàÎÄ¼şÃûÇ°8Î»£¨Ñ§ºÅ£©
-										String tip = tableView.getItems().get(this.getIndex()).getMyFileName();
-										if ( tip.length()>8) {
-											tip = tip.substring(0,8);
-										}
-										//ÌáÊ¾¿ò
-										this.setTooltip(new Tooltip(tip+"--"+this.getTableColumn().getText()));
-									}
-									
-								}
-
-								@Override
-								public void startEdit() {
-									// TODO Auto-generated method stub
-									super.startEdit();
-									HBox hBox = new HBox();
-									hBox.setPadding(new Insets(5));
-									hBox.setSpacing(10);
-									
-									ShowSimilar showSimilar = new ShowSimilar(tableView.getItems().get(this.getIndex()).getMyFileAllName(),
-											tableView.getItems().get(this.getIndex()).getIFileAllName(this.getTableColumn().getText()),
-											tableView.getItems().get(this.getIndex()).getMyFilePath(),
-											tableView.getItems().get(this.getIndex()).getIFilePath(this.getTableColumn().getText()));
-	
-									hBox.getChildren().addAll(showSimilar.getvBox1(),showSimilar.getvBox2());
-									
-							        Scene thirdScene = new Scene(hBox, 850, 400);
-							        thirdStage.setScene(thirdScene);
-							        thirdStage.show();
-								}
-								
-							};
-							return cell;
-						}
-					});
-			        tableView.getColumns().add(resultColumn);
-				}
-		        //¿ÕÁĞ¡¢ÎªÁËÔ­×îºóÒ»ÁĞµÄÊı¾İÍêÕûÏÔÊ¾
-		        TableColumn<ResultData, String> nullColumn = new TableColumn<>("\t");
-		        nullColumn.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ResultData,String>, ObservableValue<String>>() {
-					
-					@Override
-					public ObservableValue<String> call(CellDataFeatures<ResultData, String> param) {
-						// TODO Auto-generated method stub
-						SimpleStringProperty ssp = new SimpleStringProperty("\t");
-						return ssp;
-					}
-				});
-		        tableView.getColumns().add(nullColumn);
-		        
+		       
 		        secondStage.setScene(secondScene);
 		        secondStage.show();
 			}
@@ -283,7 +130,7 @@ public class Main extends Application
 		scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 		primaryStage.setScene(scene);
 		primaryStage.show();
-		//µ±Ç°Ò»¸östage±»¹Ø±Õ£¬ºóÃæµÄÒ²ËæÖ®¹Ø±Õ
+		//å½“å‰ä¸€ä¸ªstageè¢«å…³é—­ï¼Œåé¢çš„ä¹Ÿéšä¹‹å…³é—­
 		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
 			@Override
@@ -311,20 +158,20 @@ public class Main extends Application
         launch(args);
 	}
 	
-	//³õÊ¼»¯TreeView
+	//åˆå§‹åŒ–TreeView
 	public void initTreeView() throws Exception 
 	{
 		
-		ItemData data_root = new ItemData(true," ","ÎÄ¼ş¹ÜÀí");
+		ItemData data_root = new ItemData(true," ","æ–‡ä»¶ç®¡ç†");
 		TreeItem<ItemData> root = new TreeItem<ItemData>(data_root);
 		
 		root.setExpanded(true);
-		//1. »ñÈ¡±¾»úÅÌ·û
+		//1. è·å–æœ¬æœºç›˜ç¬¦
 		File[] roots = File.listRoots();
 		FileSystemView sys = FileSystemView.getFileSystemView();
 		for (int i = 0; i < roots.length; i++) {
-		    if(sys.getSystemTypeDescription(roots[i]).equals("±¾µØ´ÅÅÌ")){
-		    	ItemData itemi = new ItemData(true,roots[i].getPath(),roots[i].getPath());// ´ÅÅÌÂ·¾¶
+		    if(sys.getSystemTypeDescription(roots[i]).equals("æœ¬åœ°ç£ç›˜")){
+		    	ItemData itemi = new ItemData(true,roots[i].getPath(),roots[i].getPath());// ç£ç›˜è·¯å¾„
 		    	TreeItem<ItemData> treeItemi = new TreeItem<ItemData>(itemi);
 		    
 		    	root.getChildren().add(treeItemi);
@@ -334,32 +181,125 @@ public class Main extends Application
 		}
 	
 		
-		// ÉèÖÃ¸ù½Úµã
+		// è®¾ç½®æ ¹èŠ‚ç‚¹
 		treeView.setRoot( root );
 		treeView.setShowRoot(false);
 		treeView.setCellFactory((TreeView<ItemData> p) ->  new MyTreeCell());
 		
-		//treeView µÄµã»÷ÊÂ¼ş,ÏÔÊ¾ÆäÏÂµÄÎÄ¼ş¼ĞºÍÎÄ¼ş
+		//treeView çš„ç‚¹å‡»äº‹ä»¶,æ˜¾ç¤ºå…¶ä¸‹çš„æ–‡ä»¶å¤¹å’Œæ–‡ä»¶
 		treeView.addEventFilter(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>()
 	    {
 	        public void handle(MouseEvent event)
 	        {
 	        	
-	        	 //»ñÈ¡µã»÷µÄtreeView½Úµã£¬½«ÆäÊµÀı»¯ÎªÒ»¸öItemData
+	        	 //è·å–ç‚¹å‡»çš„treeViewèŠ‚ç‚¹ï¼Œå°†å…¶å®ä¾‹åŒ–ä¸ºä¸€ä¸ªItemData
 	        	 ItemData itemData= (ItemData) (treeView.getSelectionModel().getSelectedItem()).getValue();
 	        
-	        	 //»ñÈ¡µã»÷µÄtreeview½Úµã
+	        	 //è·å–ç‚¹å‡»çš„treeViewèŠ‚ç‚¹
 	        	 TreeItem<ItemData> item = ((TreeItem<ItemData>)treeView.getSelectionModel().getSelectedItem());
 	        	 
-	        	 if(item.isExpanded()) {//Èç¹û½ÚµãÒÑ¾­Õ¹¿ª
+	        	 if(item.isExpanded()) {//å¦‚æœèŠ‚ç‚¹å·²ç»å±•å¼€
 	        		 item.setExpanded(false);
-	        	 }else {//·ñÔò¸üĞÂ×Ó½ÚµãÔÙÕ¹¿ª
+	        	 }else {//å¦åˆ™æ›´æ–°å­èŠ‚ç‚¹å†å±•å¼€
 	        		 getAllFilePath(item ,itemData);
 	        	 }
+	        	 //ç‚¹å‡»Cæ–‡ä»¶ï¼Œå°†å½“å‰ç›®å½•æ‰€æœ‰Cæ–‡ä»¶æ”¾ç½®åœ¨listView
 	        	 if (item.getValue().getPath().endsWith(".c")) {
 					
 					initListView(item);
 	        	 }
+	        	 //ç‚¹å‡»Zipå‹ç¼©åŒ…
+	        	 else if (item.getValue().getPath().endsWith(".zip")) {
+
+	        		ZipFile zf;
+					try {
+						zf = new ZipFile(item.getValue().getPath(),Charset.forName("GBK"));
+						
+		        		ArrayList<ItemData> zipDirArrayList = new ArrayList<>();
+						ListView<ItemData> dirListView = new ListView<ItemData>();
+						
+						
+						//ç¬¬ä¸‰æ–¹æ’ä»¶
+						net.lingala.zip4j.ZipFile myZipFile = new net.lingala.zip4j.ZipFile(item.getValue().getPath());
+						//å‹ç¼©åŒ…çš„è§£å‹è·¯å¾„
+						String pathString = item.getValue().getPath().substring(0, item.getValue().getPath().indexOf(".zip"));
+						myZipFile.extractAll(pathString);
+						File[] files = new File(pathString).listFiles();
+						for (File file:files) {
+							if (file.isDirectory()) {
+								ItemData zipItemData = new ItemData(true,file.getPath(),file.getName());
+								zipDirArrayList.add(zipItemData);
+							}
+						}
+						ObservableList<ItemData> dirList = FXCollections.observableArrayList(zipDirArrayList);
+		        		dirListView.setItems(dirList);
+		        		dirListView.setCellFactory(new Callback<ListView<ItemData>, ListCell<ItemData>>() {
+
+							@Override
+							public ListCell<ItemData> call(ListView<ItemData> param) {
+								// TODO Auto-generated method stub
+								ListCell<ItemData> listCell = new ListCell<ItemData>() {
+									protected void updateItem(ItemData item,boolean empty) {
+										super.updateItem(item,empty);
+										if(! empty) {
+											this.setText(item.getName());
+										}
+									}
+								};
+								return listCell;
+							}
+		        			
+						});
+		        		dirListView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+		        		dirListView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<ItemData>() {
+
+							@Override
+							public void changed(ObservableValue<? extends ItemData> observable, ItemData oldValue,
+									ItemData newValue) {
+								// TODO Auto-generated method stub
+								arrayList.clear();
+								if (dirListView.getSelectionModel().getSelectedItem() != null) {
+									File[] files = new File(dirListView.getSelectionModel().getSelectedItem().getPath()).listFiles();
+									//æ¸…é™¤ä¹‹å‰å­˜å‚¨çš„ä¿¡æ¯
+									arrayList.clear();
+									for (int i = 0; i < files.length; i++) {
+										if (files[i].isFile()&&files[i].getName().endsWith(".c")) {
+											arrayList.add(new ItemData(false,files[i].getPath(),files[i].getName()));
+										}
+										
+									}
+									StackPane secondPane = new StackPane();
+							        Scene secondScene = new Scene(secondPane, 1000, 500);
+									//tableView å±•ç¤ºnä¸ªæ–‡ä»¶ä¹‹é—´çš„ç›¸ä¼¼åº¦ç»“æœ
+							        ShowTableView showTableView = new ShowTableView(thirdStage, arrayList);
+							        TableView<ResultData> tableView = showTableView.getTableView();
+							        secondPane.setAlignment(Pos.CENTER);
+							        secondPane.setPadding(new Insets(5));
+							        secondPane.getChildren().add(tableView);
+							       
+							        secondStage.setScene(secondScene);
+							        secondStage.show();
+ 									
+								}
+								
+								fourthStage.close();
+							}
+		        			
+						});
+						Scene fourthScene = new Scene(dirListView, 500, 200);
+						fourthStage.setTitle("å‹ç¼©åŒ…ä¸‹æ£€æµ‹åˆ°çš„æ–‡ä»¶å¤¹ï¼Œè¯·ç‚¹å‡»");
+				        fourthStage.setScene(fourthScene);
+				        fourthStage.show();
+				       
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} 
+	        		
+	        
+     		    }        
+ 
+	        	 
 	        }
 	    });
 	}
@@ -372,10 +312,10 @@ public class Main extends Application
 			}
  		}
 		ObservableList<ItemData> itemList = FXCollections.observableArrayList(list);
-		// ÉèÖÃÊı¾İÔ´
+		// è®¾ç½®æ•°æ®æº
 		listView.setItems(itemList);
 		listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		//ÉèÖÃµ¥Ôª¸ñÏÔÊ¾
+		//è®¾ç½®å•å…ƒæ ¼æ˜¾ç¤º
 		listView.setCellFactory(new Callback<ListView<ItemData>, ListCell<ItemData>>() {
 
 			public ListCell<ItemData> call(ListView<ItemData> param) {
@@ -404,7 +344,7 @@ public class Main extends Application
 							pane.getChildren().get(1).setVisible(true);
 							getJTreeButton.setOnAction(new EventHandler<ActionEvent>() {
 								public void handle(ActionEvent event) {
-									//javafx Ê¹ÓÃ swing×é¼ş£¬·ÀÖ¹Ïß³Ì×èÈû
+									//javaFx ä½¿ç”¨ swingç»„ä»¶ï¼Œé˜²æ­¢çº¿ç¨‹é˜»å¡
 									Platform.runLater(new Runnable() {
 										
 										@Override
@@ -469,17 +409,17 @@ public class Main extends Application
 		});
 		listView.setPrefSize(400, 500);
 	}
-	//±éÀúÄ³Ò»ÎÄ¼ş¼ĞÏÂ¼¶ÎÄ¼şºÍÎÄ¼ş¼Ğ
+	//éå†æŸä¸€æ–‡ä»¶å¤¹ä¸‹çº§æ–‡ä»¶å’Œæ–‡ä»¶å¤¹
 	private  void getAllFilePath(TreeItem<ItemData> treeItem,ItemData itemData){
 		
-		//ÒÆÈ¥ËùÓĞ×Ó½Úµã£¬ÔÙÖØĞÂÌí¼Ó
+		//ç§»å»æ‰€æœ‰å­èŠ‚ç‚¹ï¼Œå†é‡æ–°æ·»åŠ 
 		treeItem.getChildren().clear();
 		
-		if(itemData.getIsDir()) {//Èç¹ûÊÇÎÄ¼ş¼Ğ
+		if(itemData.getIsDir()) {//å¦‚æœæ˜¯æ–‡ä»¶å¤¹
 			
-			//»ñÈ¡ËùÓĞ×ÓÄ¿Â¼¡¢ÎÄ¼ş
+			//è·å–æ‰€æœ‰å­ç›®å½•ã€æ–‡ä»¶
 			File[] files = new File(itemData.getPath()).listFiles();
-			//½«×ÓÄ¿Â¼ÎÄ¼şÌí¼ÓÎªÆä×Ó½Úµã
+			//å°†å­ç›®å½•æ–‡ä»¶æ·»åŠ ä¸ºå…¶å­èŠ‚ç‚¹
 			for (int i = 0; i < files.length; i++) {
 				if (files[i].getName().contains(".BIN")||files[i].getName().contains(".sys")) {
 					continue;
